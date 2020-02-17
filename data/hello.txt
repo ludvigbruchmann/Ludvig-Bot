@@ -1,0 +1,2 @@
+This file exists so that the data folder will be created
+"I have done my job 😄" -This file, <INSERT CURRENT YEAR>
