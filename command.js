@@ -4,6 +4,15 @@ const config = require('./config')
 const funnies = require('./funnies')
 const md = require('./md')
 
+const Datastore = require('nedb')
+var db = {
+  simples: new Datastore({filename: 'data/simples.json', autoload: true})
+}
+
+function parseSimple(simple){
+  return simple;
+}
+
 module.exports = {
   parse: (msg, callback=(cmd,args)=>{}) => {
     if(msg.content.startsWith(config.prefix)){
@@ -39,6 +48,18 @@ module.exports = {
         }
         break
 
+      case "add":
+        if(config.gods.includes(msg.author.id) && args.length >= 2){
+          db.simples.insert({
+            command: args[0],
+            return: args[1],
+            server: msg.guild.id
+          }, (err, doc)=>{
+            debug.log(`Added simple: ${colors.blue(`${args[0]} ${args[1]}`)} to server ${colors.blue(msg.guild)}`)
+          })
+        }
+        break
+
       case "roll":
         if(args[0]){
           dice = args[0].replace(/\D/g,'')
@@ -60,6 +81,15 @@ module.exports = {
 
   },
   simple: (cmd, msg=null, client=null) => {
-
+    db.simples.findOne({
+      command: cmd,
+      server: msg.guild.id
+    }, (err, doc)=>{
+      if(doc){
+        msg.channel.send(
+          parseSimple(doc.return)
+        )
+      }
+    })
   }
 }
