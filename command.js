@@ -4,13 +4,18 @@ const config = require('./config')
 const funnies = require('./funnies')
 const md = require('./md')
 
+const package = require('./package.json');
+
 const Datastore = require('nedb')
 var db = {
   simples: new Datastore({filename: 'data/simples.json', autoload: true})
 }
 
-function parseSimple(simple){
-  return simple;
+function parseSimple(simple, args){
+  output = simple
+    .replace(/(?!\\)\$v/g, package.version)
+    .replace(/(?!\\)\$version/g, package.version)
+  return output;
 }
 
 module.exports = {
@@ -45,6 +50,7 @@ module.exports = {
         if(config.gods.includes(msg.author.id) && args.length >= 2){
           client.user.setPresence({game: {name: args[1], type: args[0].toUpperCase()}, status: "online"})
           debug.log("Changed status: " + colors.blue(`${args[0]} ${args[1]}`))
+          msg.channel.send("Changed status: " + `**${args[0]} ${args[1]}**`)
         }
         break
 
@@ -55,7 +61,20 @@ module.exports = {
             return: args[1],
             server: msg.guild.id
           }, (err, doc)=>{
-            debug.log(`Added simple: ${colors.blue(`${args[0]} ${args[1]}`)} to server ${colors.blue(msg.guild)}`)
+            debug.log(`Added command ${colors.blue(`${args[0]} ${args[1]}`)} to server ${colors.blue(msg.guild.name)}`)
+            msg.channel.send(`Added command **${config.prefix}${args[0]}** to server **${msg.guild.name}**`)
+          })
+        }
+        break
+
+      case "remove":
+        if(config.gods.includes(msg.author.id) && args.length >= 1){
+          db.simples.remove({
+            command: args[0],
+            server: msg.guild.id
+          }, (err, doc)=>{
+            debug.log(`Removed command ${colors.blue(`${args[0]}`)} from server ${colors.blue(msg.guild.name)}`)
+            msg.channel.send(`Removed command **${config.prefix}${args[0]}** from server **${msg.guild.name}**`)
           })
         }
         break
@@ -74,20 +93,20 @@ module.exports = {
         break
     
       default:
-        module.exports.simple(cmd, msg, client)
+        module.exports.simple(cmd, args, msg, client)
         break
 
     }
 
   },
-  simple: (cmd, msg=null, client=null) => {
+  simple: (cmd, args, msg=null, client=null) => {
     db.simples.findOne({
       command: cmd,
       server: msg.guild.id
     }, (err, doc)=>{
       if(doc){
         msg.channel.send(
-          parseSimple(doc.return)
+          parseSimple(doc.return, args)
         )
       }
     })

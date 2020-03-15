@@ -1,7 +1,6 @@
 const colors = require('colors')
 const config = require('./config')
 const command = require('./command')
-const funnies = require('./funnies')
 
 const Discord = require('discord.js')
 const client = new Discord.Client()
