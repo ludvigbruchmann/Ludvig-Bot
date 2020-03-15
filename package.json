@@ -3,7 +3,14 @@
   "version": "2.0.0",
   "description": "",
   "main": "index.js",
+  "nodemonConfig": {
+    "ignore": [
+      "data/*"
+    ]
+  },
   "scripts": {
+    "start": "node index",
+    "dev": "nodemon",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Ludvig Alexander Brüchmann (ludvigbruchmann@gmail.com)",
@@ -12,5 +19,8 @@
     "colors": "^1.4.0",
     "discord.js": "^11.5.1",
     "nedb": "^1.8.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
   }
 }
