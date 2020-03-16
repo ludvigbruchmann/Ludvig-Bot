@@ -91,6 +91,20 @@ module.exports = {
         msg.channel.send(`:game_die: ${msg.author} rolled ${md.code(roll)} out of ${md.code(dice)}`)
         debug.log(`${colors.blue("@"+msg.author.username)} rolled ${colors.green(roll)} out of ${colors.green(dice)}`)
         break
+
+      case "help":
+        db.simples.find({
+          server: msg.guild.id
+        }, (err, doc)=>{
+          if(doc){
+            helpList = [config.prefix + "roll"]
+            for (let i = 0; i < doc.length; i++) {
+              helpList.push(config.prefix+doc[i].command)
+            }
+            msg.channel.send("```" + helpList + "```")
+          }
+        })
+        break
     
       default:
         module.exports.simple(cmd, args, msg, client)
