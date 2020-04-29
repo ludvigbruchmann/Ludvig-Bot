@@ -18,19 +18,17 @@ function parseSimple(simple, args){
   return output
 }
 
-function pollOptions(args){
-  output = ""
-  if(args.length>1){output+="\n1️⃣ "+args[1]}
-  if(args.length>2){output+="\n2️⃣ "+args[2]}
-  if(args.length>3){output+="\n3️⃣ "+args[3]}
-  if(args.length>4){output+="\n4️⃣ "+args[4]}
-  if(args.length>5){output+="\n5️⃣ "+args[5]}
-  if(args.length>6){output+="\n6️⃣ "+args[6]}
-  if(args.length>7){output+="\n7️⃣ "+args[7]}
-  if(args.length>8){output+="\n8️⃣ "+args[8]}
-  if(args.length>9){output+="\n9️⃣ "+args[9]}
-  if(args.length>10){output+="\n🔟 "+args[10]}
-  return output
+function pollOptions(embed, args){
+  if(args.length>1){embed.fields.push({name:"\n1️⃣",value: args[1]})}
+  if(args.length>2){embed.fields.push({name:"\n2️⃣",value: args[2]})}
+  if(args.length>3){embed.fields.push({name:"\n3️⃣",value: args[3]})}
+  if(args.length>4){embed.fields.push({name:"\n4️⃣",value: args[4]})}
+  if(args.length>5){embed.fields.push({name:"\n5️⃣",value: args[5]})}
+  if(args.length>6){embed.fields.push({name:"\n6️⃣",value: args[6]})}
+  if(args.length>7){embed.fields.push({name:"\n7️⃣",value: args[7]})}
+  if(args.length>8){embed.fields.push({name:"\n8️⃣",value: args[8]})}
+  if(args.length>9){embed.fields.push({name:"\n9️⃣",value: args[9]})}
+  if(args.length>10){embed.fields.push({name:"\n🔟",value: args[10]})}
 }
 
 async function pollReactions(msg, args){
@@ -44,7 +42,6 @@ async function pollReactions(msg, args){
   if(args.length>8){await msg.react("8️⃣")}
   if(args.length>9){await msg.react("9️⃣")}
   if(args.length>10){await msg.react("🔟")}
-  return output
 }
 
 module.exports = {
@@ -86,13 +83,31 @@ module.exports = {
       case "poll":
         if(args.length>0){
           if(args.length==1){ // yes/no poll, no options
-            msg.channel.send(`**${args[0]}**`).then(poll => {
-              poll.react("👍")
-              poll.react("👎")
+            msg.channel.send({embed:{
+              title: args[0],
+              color: 0x7289DA,
+              author: {
+                name: msg.author.username,
+                icon_url: msg.author.avatarURL
+              },
+              timestamp: new Date()
+            }}).then(poll => {
+              poll.react("👍").then(poll.react("👎"))
             })
           } else {
             options = args.slice(1,10)
-            msg.channel.send(`**${args[0]}**\n${pollOptions(args)}`).then(async poll => {
+            embed = {
+              title: args[0],
+              color: 0x7289DA,
+              author: {
+                name: msg.author.username,
+                icon_url: msg.author.avatarURL
+              },
+              fields: [],
+              timestamp: new Date()
+            }
+            pollOptions(embed, args)
+            msg.channel.send({embed:embed}).then(async poll => {
               pollReactions(poll, args)
             })
           }
