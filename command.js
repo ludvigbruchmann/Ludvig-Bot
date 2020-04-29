@@ -142,7 +142,7 @@ module.exports = {
           server: msg.guild.id
         }, (err, doc)=>{
           if(doc){
-            helpList = [config.prefix + "poll", config.prefix + "roll", config.prefix + "status"]
+            helpList = [config.prefix + "poll", config.prefix + "roll"]
             for (let i = 0; i < doc.length; i++) {
               helpList.push(config.prefix+doc[i].command)
             }
