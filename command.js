@@ -44,6 +44,12 @@ async function pollReactions(msg, args){
   if(args.length>10){await msg.react("🔟")}
 }
 
+async function yesNoPollReactions(msg){
+  await msg.react("👍")
+  await msg.react("🤷‍♀️")
+  await msg.react("👎")
+}
+
 module.exports = {
   parse: (msg, callback=(cmd,args)=>{}) => {
     if(msg.content.startsWith(config.prefix)){
@@ -95,7 +101,7 @@ module.exports = {
           }
           if(args.length==1){ // yes/no poll, no options
             msg.channel.send({embed:embed}).then(poll => {
-              poll.react("👍").then(poll.react("👎"))
+              yesNoPollReactions(poll)
             })
           } else {
             options = args.slice(1,10)
