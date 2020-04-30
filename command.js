@@ -82,35 +82,29 @@ module.exports = {
 
       case "poll":
         if(args.length>0){
+          embed = {
+            title: args[0],
+            color: 0x7289DA,
+            author: {
+              name: msg.author.username,
+              icon_url: msg.author.avatarURL
+            },
+            footer: {text: "📄 React to this poll to vote"},
+            fields: [],
+            timestamp: new Date()
+          }
           if(args.length==1){ // yes/no poll, no options
-            msg.channel.send({embed:{
-              title: args[0],
-              color: 0x7289DA,
-              author: {
-                name: msg.author.username,
-                icon_url: msg.author.avatarURL
-              },
-              timestamp: new Date()
-            }}).then(poll => {
+            msg.channel.send({embed:embed}).then(poll => {
               poll.react("👍").then(poll.react("👎"))
             })
           } else {
             options = args.slice(1,10)
-            embed = {
-              title: args[0],
-              color: 0x7289DA,
-              author: {
-                name: msg.author.username,
-                icon_url: msg.author.avatarURL
-              },
-              fields: [],
-              timestamp: new Date()
-            }
             pollOptions(embed, args)
             msg.channel.send({embed:embed}).then(async poll => {
               pollReactions(poll, args)
             })
           }
+          msg.delete()
         }
         break
 
