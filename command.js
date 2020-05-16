@@ -6,8 +6,12 @@ const md = require('./md')
 
 const package = require('./package.json');
 
+var client = null
+var killed = false
+
 const Datastore = require('nedb')
 var db = {
+  feed: new Datastore({filename: 'data/feed.json', autoload: true}),
   simples: new Datastore({filename: 'data/simples.json', autoload: true})
 }
 
@@ -50,7 +54,81 @@ async function yesNoPollReactions(msg){
   await msg.react("👎")
 }
 
+const axios = require('axios')
+function readFeed(url, callback=(err,doc)=>{}){
+  axios.get(url)
+  .then((res)=>{
+    if(res.data){
+      if(res.data.title && res.data.icon && res.data.author && res.data.items && res.data.home_page_url && res.data.description){
+        callback(null, res.data)
+      } else {
+        callback('Invalid JSON feed',null)
+      }
+    } else {
+      callback('No data returned',null)
+    }
+  })
+  .catch(function (error) {
+    // handle error
+    callback(error,null);
+  })
+}
+
+function formatArticle(item, feed){
+  return {
+    color: 0x0099ff,
+    title: item.title,
+    url: item.url,
+    author: item.author,
+    description: item.description,
+    thumbnail: {
+      url: feed.icon,
+    },
+    timestamp: item.date_modified,
+  }
+}
+
+function refreshFeeds(){
+  db.feed.find({}, (err,feeds)=>{
+    debug.log('Refreshing feed')
+    for (let i = 0; i < feeds.length; i++) {
+      feed = feeds[i]
+      debug.log(`Updating ${colors.blue(feed.meta.title)}`)
+      axios.get(feed.url)
+      .then((res)=>{
+        if(res.data){
+          if(res.data.title && res.data.icon && res.data.author && res.data.items && res.data.home_page_url && res.data.description){
+            alreadyPosted = []
+            for (let j = 0; j < feed.items.length; j++) {
+              item = feed.items[j]
+              alreadyPosted.push(item.id)
+            }
+            for (let k = 0; k < res.data.items.length; k++) {
+              item = res.data.items[k]
+              if(!alreadyPosted.includes(item.id)){
+                client.channels.get(feed.channel).send({embed: formatArticle(item, feed)})
+              }
+            }
+          } else {
+            debug.log(`${colors.red('ERR:')} ${colors.blue(feed.url)}: Invalid JSON feed`)
+          }
+        } else {
+          debug.log(`${colors.red('ERR:')} ${colors.blue(feed.url)}: No data returned`)
+        }
+      })
+      .catch(function (error) {
+        // handle error
+        debug.log(error);
+      })
+    }
+    setInterval(function(){
+      if(!killed){refreshFeeds()}
+    }, 1000*60*5)
+  })
+}
+
 module.exports = {
+  setup: (c)=>{client=c; refreshFeeds()},
   parse: (msg, callback=(cmd,args)=>{}) => {
     if(msg.content.startsWith(config.prefix)){
       msgArray = msg.content.match(/(".*?"|[^"\s]+)+(?=\s*|\s*$)/g)
@@ -64,7 +142,7 @@ module.exports = {
       callback(cmd, args)
     }
   },
-  default: (cmd, args, msg=null, client=null) => {
+  default: (cmd, args, msg=null) => {
 
     switch (cmd) {
 
@@ -73,6 +151,7 @@ module.exports = {
           msg.channel.send(`:skull:`)
             .then(console.log(colors.red("God Force Shotdown")))
             .then(client.destroy())
+            .then(killed = true)
         } else {
           msg.reply(funnies.kill())
         }
@@ -111,6 +190,75 @@ module.exports = {
             })
           }
           msg.delete()
+        }
+        break
+
+      case "feed":
+        if(config.gods.includes(msg.author.id) && args.length >= 2){
+          feed = {err: null, doc: null}
+          readFeed(args[1],(err,doc)=>{
+            feed.err = err
+            feed.doc = doc
+
+            if(args[0]=="test"){
+              if(feed.doc){
+                msg.react('👌')
+              } else{
+                msg.channel.send(`${args[1]} is not a valid JSON feed.`)
+              }
+            }
+            else if(args[0]=="subscribe"||args[0]=="add"){
+              if(feed.doc){
+                meta = JSON.parse(JSON.stringify(feed.doc))
+                delete meta.items
+                db.feed.insert({
+                  url: args[1],
+                  meta: meta,
+                  items: feed.doc.items,
+                  channel: msg.channel.id,
+                  server: msg.guild.id
+                }, (err, doc)=>{
+                  if(doc){
+                    msg.react('👌')
+                    debug.log(`Subscribed to feed ${colors.blue(args[1])} in ${colors.blue(`${msg.guild.name} #${msg.channel.name}`)}`)
+                  } else if(err) {
+                    debug.log(err)
+                  }
+                })
+              } else {
+                msg.channel.send(`${args[1]} is not a valid JSON feed.`)
+              }
+            }
+            else if(args[0]=="unsubscribe"||args[0]=="remove"){
+              if(feed.doc){
+                db.feed.remove({
+                  url: args[1],
+                  channel: msg.channel.id,
+                  server: msg.guild.id
+                }, {}, (err, doc)=>{
+                  console.log(err, doc)
+                  if(doc){
+                    msg.react('👌')
+                    debug.log(`Unsubscribed from feed ${colors.blue(args[1])} in ${colors.blue(`${msg.guild.name} #${msg.channel.name}`)}`)
+                  } else if(err) {
+                    debug.log(err)
+                  }
+                })
+              } else {
+                msg.channel.send(`${args[1]} is not a valid JSON feed.`)
+              }
+            }
+          })
+        }
+        if(config.gods.includes(msg.author.id) && args.length >= 1){
+          if(args[0]=="list"){
+            db.feed.find({
+              channel: msg.channel.id,
+              server: msg.guild.id
+            }, (err,doc)=>{
+              // TODO
+            })
+          }
         }
         break
 

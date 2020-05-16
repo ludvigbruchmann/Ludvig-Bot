@@ -16,6 +16,7 @@
   "author": "Ludvig Alexander Brüchmann (ludvigbruchmann@gmail.com)",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.19.2",
     "colors": "^1.4.0",
     "discord.js": "^11.5.1",
     "nedb": "^1.8.0"

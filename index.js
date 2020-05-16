@@ -8,6 +8,7 @@ const client = new Discord.Client()
 client.on('ready', () => {
   console.log(colors.green(`Logged in as ${client.user.tag}`))
   client.user.setPresence({game: {name: 'The World Burn', type: "WATCHING"}, status: "online"})
+  command.setup(client)
 })
 
 client.on('message', msg => {
