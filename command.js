@@ -8,7 +8,8 @@ const package = require('./package.json');
 
 const Datastore = require('nedb')
 var db = {
-  simples: new Datastore({filename: 'data/simples.json', autoload: true})
+  simples: new Datastore({filename: 'data/simples.json', autoload: true}),
+  roleReacts: new Datastore({filename: 'data/roleReacts.json', autoload: true})
 }
 
 function parseSimple(simple, args){
@@ -50,7 +51,27 @@ async function yesNoPollReactions(msg){
   await msg.react("👎")
 }
 
+function isCustomEmoji(emoji) {
+  const matchEmoji = /^(:[^:\s]+:|<:[^:\s]+:[0-9]+>|<a:[^:\s]+:[0-9]+>)+$/
+  return matchEmoji.test(emoji)
+}
+
+function getRole(mention, roles) {
+	// The id is the first and only match found by the RegEx.
+	const matches = mention.match(/^<@&!?(\d+)>$/);
+
+	// If supplied variable was not a mention, matches will be null instead of an array.
+	if (!matches) return;
+
+	// However the first element in the matches array will be the entire mention, not just the ID,
+	// so use index 1.
+	const id = matches[1];
+
+	return roles.cache.get(id);
+}
+
 module.exports = {
+  db: db,
   parse: (msg, callback=(cmd,args)=>{}) => {
     if(msg.content.startsWith(config.prefix)){
       msgArray = msg.content.match(/(".*?"|[^"\s]+)+(?=\s*|\s*$)/g)
@@ -83,6 +104,8 @@ module.exports = {
           client.user.setPresence({game: {name: args[1], type: args[0].toUpperCase()}, status: "online"})
           debug.log("Changed status: " + colors.blue(`${args[0]} ${args[1]}`))
           msg.channel.send("Changed status: " + `**${args[0]} ${args[1]}**`)
+        } else {
+          msg.reply(funnies.mortal())
         }
         break
 
@@ -114,6 +137,50 @@ module.exports = {
         }
         break
 
+      case "role":
+        if(config.gods.includes(msg.author.id) && args.length >= 2){
+          if(isCustomEmoji(args[0])){
+            emoji = args[0].replace(/\D/g,'')
+            role = getRole(args[1], msg.guild.roles)
+
+            reactString = `React ${msg.guild.emojis.cache.get(emoji)} to be assigned to ${msg.guild.roles.cache.get(role.id)}`
+            embed = {
+              title: null,
+              color: 0x7289DA,
+              author: {
+                name: role.name,
+                icon_url: msg.guild.emojis.cache.get(emoji).url
+              },
+              footer: {text: "📄 React to this message to be assigned a role"},
+              description: reactString,
+              timestamp: new Date()
+            }
+            
+            
+            msg.channel.send({embed:embed}).then(roleMsg => {
+              msg.delete()
+              roleMsg.react(emoji)
+
+              db.roleReacts.insert({
+                server: msg.guild.id,
+                msg: roleMsg.id,
+                roles: [
+                  {emoji: emoji,
+                  role: role.id}
+                ]
+              }, (err, doc) => {
+                if(err){debug.log(err)}
+              })
+              
+            })
+          }
+        } else {
+          msg.reply(funnies.mortal())
+        }
+        break
+
+      // #TODO: Multi role reacts
+
       case "add":
         if(config.gods.includes(msg.author.id) && args.length >= 2){
           db.simples.insert({
@@ -124,6 +191,8 @@ module.exports = {
             debug.log(`Added command ${colors.blue(`${args[0]} ${args[1]}`)} to server ${colors.blue(msg.guild.name)}`)
             msg.channel.send(`Added command **${config.prefix}${args[0]}** to server **${msg.guild.name}**`)
           })
+        } else {
+          msg.reply(funnies.mortal())
         }
         break
 
@@ -136,6 +205,8 @@ module.exports = {
             debug.log(`Removed command ${colors.blue(`${args[0]}`)} from server ${colors.blue(msg.guild.name)}`)
             msg.channel.send(`Removed command **${config.prefix}${args[0]}** from server **${msg.guild.name}**`)
           })
+        } else {
+          msg.reply(funnies.mortal())
         }
         break
 
