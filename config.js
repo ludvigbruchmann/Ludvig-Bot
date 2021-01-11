@@ -2,10 +2,11 @@ const fs = require('fs')
 const configFilePath = "./data/config.json"
 
 const defaultConfig = {
+  // Configure you config in data/config.json
   token: "<INSERT TOKEN>",
   debug: true,
   prefix: "!",
-  gods: ["179590092355141632"] // ALL POWERFUL USER, CAN SHUTDOWN, ONLY USE YOUR OWN ID, YOU CAN ALSO LEAVE MY ID HERE IF YOU TRUST ME
+  gods: [] // ALL POWERFUL USER, CAN SHUTDOWN, ONLY USE YOUR OWN ID
 }
 
 config = null

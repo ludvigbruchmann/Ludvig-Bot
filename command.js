@@ -138,7 +138,7 @@ module.exports = {
         break
 
       case "role":
-        if(config.gods.includes(msg.author.id) && args.length >= 2){
+        if(config.gods.includes(msg.author.id) && args.length >= 2){ // #TODO: Should check for role assignment permission rather than 'gods'
           if(isCustomEmoji(args[0])){
             emoji = args[0].replace(/\D/g,'')
             role = getRole(args[1], msg.guild.roles)
