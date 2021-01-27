@@ -19,30 +19,30 @@ function parseSimple(simple, args){
   return output
 }
 
-function pollOptions(embed, args){
-  if(args.length>1){embed.fields.push({name:"\n1️⃣",value: args[1]})}
-  if(args.length>2){embed.fields.push({name:"\n2️⃣",value: args[2]})}
-  if(args.length>3){embed.fields.push({name:"\n3️⃣",value: args[3]})}
-  if(args.length>4){embed.fields.push({name:"\n4️⃣",value: args[4]})}
-  if(args.length>5){embed.fields.push({name:"\n5️⃣",value: args[5]})}
-  if(args.length>6){embed.fields.push({name:"\n6️⃣",value: args[6]})}
-  if(args.length>7){embed.fields.push({name:"\n7️⃣",value: args[7]})}
-  if(args.length>8){embed.fields.push({name:"\n8️⃣",value: args[8]})}
-  if(args.length>9){embed.fields.push({name:"\n9️⃣",value: args[9]})}
-  if(args.length>10){embed.fields.push({name:"\n🔟",value: args[10]})}
+function pollOptions(embed, options, emojis=["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]){
+  if(options.length>=1){embed.fields.push({name:`\n${emojis[0]}`,value: options[0]})}
+  if(options.length>=2){embed.fields.push({name:`\n${emojis[1]}`,value: options[1]})}
+  if(options.length>=3){embed.fields.push({name:`\n${emojis[2]}`,value: options[2]})}
+  if(options.length>=4){embed.fields.push({name:`\n${emojis[3]}`,value: options[3]})}
+  if(options.length>=5){embed.fields.push({name:`\n${emojis[4]}`,value: options[4]})}
+  if(options.length>=6){embed.fields.push({name:`\n${emojis[5]}`,value: options[5]})}
+  if(options.length>=7){embed.fields.push({name:`\n${emojis[6]}`,value: options[6]})}
+  if(options.length>=8){embed.fields.push({name:`\n${emojis[7]}`,value: options[7]})}
+  if(options.length>=9){embed.fields.push({name:`\n${emojis[8]}`,value: options[8]})}
+  if(options.length>=10){embed.fields.push({name:`\n${emojis[9]}`,value: options[9]})}
 }
 
-async function pollReactions(msg, args){
-  if(args.length>1){await msg.react("1️⃣")}
-  if(args.length>2){await msg.react("2️⃣")}
-  if(args.length>3){await msg.react("3️⃣")}
-  if(args.length>4){await msg.react("4️⃣")}
-  if(args.length>5){await msg.react("5️⃣")}
-  if(args.length>6){await msg.react("6️⃣")}
-  if(args.length>7){await msg.react("7️⃣")}
-  if(args.length>8){await msg.react("8️⃣")}
-  if(args.length>9){await msg.react("9️⃣")}
-  if(args.length>10){await msg.react("🔟")}
+async function pollReactions(msg, options, emojis=["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]){
+  if(options.length>=1){await msg.react(emojis[0])}
+  if(options.length>=2){await msg.react(emojis[1])}
+  if(options.length>=3){await msg.react(emojis[2])}
+  if(options.length>=4){await msg.react(emojis[3])}
+  if(options.length>=5){await msg.react(emojis[4])}
+  if(options.length>=6){await msg.react(emojis[5])}
+  if(options.length>=7){await msg.react(emojis[6])}
+  if(options.length>=8){await msg.react(emojis[7])}
+  if(options.length>=9){await msg.react(emojis[8])}
+  if(options.length>=10){await msg.react(emojis[9])}
 }
 
 async function yesNoPollReactions(msg){
@@ -110,30 +110,46 @@ module.exports = {
         break
 
       case "poll":
+        embed = {
+          title: args[0],
+          color: 0x7289DA,
+          author: {
+            name: msg.author.username,
+            icon_url: msg.author.avatarURL
+          },
+          footer: {text: "📄 React to this poll to vote"},
+          fields: [],
+          timestamp: new Date()
+        }
         if(args.length>0){
-          embed = {
-            title: args[0],
-            color: 0x7289DA,
-            author: {
-              name: msg.author.username,
-              icon_url: msg.author.avatarURL
-            },
-            footer: {text: "📄 React to this poll to vote"},
-            fields: [],
-            timestamp: new Date()
-          }
-          if(args.length==1){ // yes/no poll, no options
+          if(args[1] == "-e"){ // if first argument is -e use custom emojis for poll
+            emojis = args[2].split(" ")
+            options = args.slice(3,12)
+            if(emojis.length==options.length){
+              pollOptions(embed, options, emojis)
+              msg.channel.send({embed:embed}).then(async poll => {
+                pollReactions(poll, options, emojis)
+              })
+              msg.delete()
+            } else {
+              msg.react("👎")
+              debug.log(colors.red("Error: Amount of emojis do not match amount of poll options"))
+              debug.log(emojis)
+              debug.log(options)
+            }
+          } else if(args.length==1){ // yes/no poll, no options
             msg.channel.send({embed:embed}).then(poll => {
               yesNoPollReactions(poll)
             })
+            msg.delete()
           } else {
             options = args.slice(1,10)
-            pollOptions(embed, args)
+            pollOptions(embed, options)
             msg.channel.send({embed:embed}).then(async poll => {
-              pollReactions(poll, args)
+              pollReactions(poll, options)
             })
+            msg.delete()
           }
-          msg.delete()
         }
         break
 
@@ -178,8 +194,6 @@ module.exports = {
           msg.reply(funnies.mortal())
         }
         break
-
-      // #TODO: Multi role reacts
 
       case "add":
         if(config.gods.includes(msg.author.id) && args.length >= 2){
